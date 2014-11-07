@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>D3 Test</title>
+    <style>
+
+        .esiAxis path,
+        .esiAxis line {
+            fill: none;
+            stroke: black;
+            shape-rendering: crispEdges;
+        }
+
+        .esiAxis text {
+            font-family: sans-serif;
+            font-size: 11px;
+        }
+
+        .xLabel{
+            font-family: sans-serif;
+            font-size: 11px;
+        }
+
+        #tooltip {
+            position: absolute;
+            width: auto;
+            height: auto;
+            padding: 10px;
+            background-color: white;
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 2px;
+            -webkit-box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            -moz-box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+
+        #tooltip.hidden {
+            display: none;
+        }
+
+        #tooltip p {
+            margin: 0;
+            font-family: sans-serif;
+            font-size: 10px;
+            line-height: 15px;
+        }
+
+        #article p {
+            margin: 0;
+            font-family: sans-serif;
+            font-size: 14px;
+            line-height: 15px;
+        }
+
+        #article {
+            width: 700px;
+            padding: 50px;
+            border: 1px solid navy;
+            margin: 50px;
+        }
+
+    </style>
+    <script type="text/javascript" src="d3.v3.js"></script>
+</head>
+
+<body>
+
+<div id="tooltip" class="hidden">
+    <p><strong id="bodyName">Body Name</strong></p>
+    <br>
+    <p><span id="pMass">100</span></p>
+    <p><span id="pRadius">100</span></p>
+    <p><span id="pTemperature">100</span></p>
+    <p><span id="pDistance">100</span></p>
+    <p><span id="pOrbit">100</span></p>
+    <p><span id="pESI">100</span></p>
+    <p><span id="pAU">100</span></p>
+    <br>
+    <p><strong id="bodyName">Parent Star</strong></p>
+    <p><span id="sMass">100</span></p>
+    <p><span id="sRadius">100</span></p>
+    <p><span id="sTemperature">100</span></p>
+    <p><span id="sLuminosity">100</span></p>
+</div>
+
+
+
+
+
+<script type="text/javascript">
+
+var dataset = d3.json("esiPlanets.json", function(data){
+
+    var canvasWidth = 900;
+    var canvasHeight = (canvasWidth * 0.7);
+    var marginPaddingLeft = 50;
+    var marginPaddingRight = 50;
+    var xAxisPositionHeight = (canvasHeight/2.4) + 0;
+    var sunColor = d3.scale.linear().domain([5780,3350]).range(['orange', 'red']);
+    var planetColor =  d3.scale.linear().domain([287,247]).range(['blue', '#32CD32']);
+    var annotationXPosition =  (canvasWidth/5);
+    var annotationYPosition = (xAxisPositionHeight/3);
+
+
+    // ---Axis domain range scale --------------------------
+    var xScale = d3.scale.linear()
+            .domain([0.75,1.0])
+            .range([canvasWidth - marginPaddingLeft - marginPaddingRight, 0]);
+
+    // -- Axis ------------------------------------------------
+    var xAxis = d3.svg.axis()
+            .scale(xScale)
+            .orient("bottom")
+            .ticks(7)
+
+
+
+    // -- Canvas ---------------------------------------------------------------
+    var canvas = d3.select("body")
+            .append("svg")
+            .attr("width", canvasWidth)
+            .attr("height", canvasHeight);
+
+    // -- Axis Translate  ---------------------------------------------------------------
+    var Main_Axis_Group = canvas.append("g")
+            .attr("transform", "translate(" + marginPaddingLeft + "," + xAxisPositionHeight +")")
+            .call(xAxis)
+            .attr("class", "esiAxis");
+
+
+    // ---- X Axis Label ------------------------------------------------------
+    var xAxisLabel = canvas.append("text")
+            .attr("class", "xLabel")
+            .attr("text-anchor", "right")
+            .attr("x", (canvasWidth) - marginPaddingRight -5)
+            .attr("y", xAxisPositionHeight + (xAxisPositionHeight/4))
+            .text("ESI");
+
+    // Planets Description
+    var planetDescription = canvas.append("text")
+            .attr("class", "xLabel")
+            .attr("text-anchor", "right")
+            .attr("x", annotationXPosition)
+            .attr("y", annotationYPosition - 50)
+            .text("Orbit of the 5 most Similar Planets by Earth Similarity Index (ESI)");
+
+    var artistDescription = canvas.append("text")
+            .attr("class", "xLabel")
+            .attr("text-anchor", "right")
+            .attr("x", annotationXPosition)
+            .attr("y", annotationYPosition -25)
+            .text("Source : Planetary Habitability Laboratory (University of Puerto Rico at Arecibo)");
+
+    var artistDescription = canvas.append("text")
+            .attr("class", "xLabel")
+            .attr("text-anchor", "right")
+            .attr("x", annotationXPosition)
+            .attr("y", annotationYPosition)
+            .text("by Gia Sadhwani : MSc Data Science 2014-15, Goldsmiths University, London.");
+
+    // -- Orbit Lines  ----------------------------------------
+
+    var orbit_LinesGroup = Main_Axis_Group.append("g");
+
+    var lines = orbit_LinesGroup.selectAll("line")
+            .data(data)
+            .enter()
+            .append("line")
+            .attr("x1",function(d){return (xScale(d.esi))})
+            .attr("y1","0")
+            .attr("x2",function(d){return (xScale(d.esi))})
+            .attr("y2",function(d){return ((d.au) * ((canvasWidth/4) * -1)) })
+            .attr("stroke","grey")
+            .attr("fill", "grey")
+            .attr("stroke-width","1");
+
+    var orbit_LinesLabelsGroup = Main_Axis_Group.append("g");
+    var linesLabels = orbit_LinesLabelsGroup.selectAll("line")
+            .data(data)
+            .enter()
+            .append("line")
+            .attr("x1",function(d){return (xScale(d.esi))})
+            .attr("y1","0")
+            .attr("x2",function(d){return (xScale(d.esi))})
+            .attr("y2",function(d){return ((d.au) * ((canvasWidth/4))) })
+            .attr("stroke","#d1edc8")
+            .attr("stroke-width","1");
+
+
+
+    // ---- Suns, parnted by Axis ------------------------------------------
+    var circles_SunsGroup = Main_Axis_Group.append("g");
+    //.attr("transform", "translate(" + 50 + "," + "0" + ")");
+
+
+
+    // -- Sun Planets  ---------------------------------------------------------------
+    var circles_Suns = circles_SunsGroup.selectAll("circle_Suns")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("r", function(d){return ((d.sradius) * (canvasWidth/35)) })
+            .attr("cx", function(d){return (xScale(d.esi))})
+            .attr("cy", 0)
+            .attr("fill", function(d, i){return (sunColor(d.sKelvin)) })
+            .on("mouseover", function(d) {
+
+                /////////////////////////////////
+
+                //Get this bar's x/y values, then augment for the tooltip
+                var xPosition = annotationXPosition;
+                var yPosition = annotationYPosition + 1000;
+
+                //Update the tooltip position and value
+                d3.select("#tooltip")
+                        .style("left", xPosition + "px")
+                        .style("top", yPosition + "px")
+                        .select("#bodyName")
+                        .text(d.name)
+                ;
+
+                d3.select("#tooltip")
+                        .select("#pMass")
+                        .text("Mass : " + d.pMass + " (Earth Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pRadius")
+                        .text("Radius : " + d.radius + " (Earth Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pTemperature")
+                        .text("Temperature : " + d.pKelvin + " (Kelvin)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pDistance")
+                        .text("Distance : " + d.pDistance + " (Light Years)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pOrbit")
+                        .text("Orbit : " + d.orbit + " (Days)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pAU")
+                        .text("Distance From Parent Star : " + d.au + " (AU)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pESI")
+                        .text("Earth Similarity Index : " + d.esi)
+                ;
+                d3.select("#tooltip")
+                        .select("#sMass")
+                        .text("Star Mass : " + d.sMass + " (Solar Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#sRadius")
+                        .text("Star Radius : " + d.sradius + " (Solar Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#sTemperature")
+                        .text("Star Temperature : " + d.sKelvin + " Kelvin")
+                ;
+                d3.select("#tooltip")
+                        .select("#sLuminosity")
+                        .text("Star Luminosity : " + d.sLuminosity + " (Solar Luminosity)")
+                ;
+
+                //Show the tooltip
+                d3.select("#tooltip").classed("hidden", false);
+
+                /////////////////////////////////
+
+                d3.select(this)
+                        .attr("fill", "#FF99FF");
+            })
+
+
+            .on("mouseout", function(d) {
+
+                //Hide the tooltip
+                d3.select("#tooltip").classed("hidden", true);
+
+                d3.select(this)
+                        .transition()
+                        .duration(250)
+                        .attr("fill", function(d, i){return (sunColor(d.sKelvin)) });
+            });
+
+    // ---- ESI Planets, parented by Axis ------------------------------------------
+    var circles_ESIGroup = Main_Axis_Group.append("g");
+    //.attr("transform", "translate(" + 50 + "," + "0" + ")");
+
+
+    // -- ESI Planets  ---------------------------------------------------------------
+    var circles_ESI = circles_ESIGroup.selectAll("circle_Planets")
+            .data(data)
+            .enter()
+            .append("circle")
+            .on("mouseover", function(d) {
+
+                /////////////////////////////////
+
+                //Get this bar's x/y values, then augment for the tooltip
+                var xPosition = annotationXPosition;
+                var yPosition = annotationYPosition + 1000;
+
+                //Update the tooltip position and value
+                d3.select("#tooltip")
+                        .style("left", xPosition + "px")
+                        .style("top", yPosition + "px")
+                        .select("#bodyName")
+                        .text(d.name)
+                ;
+
+                d3.select("#tooltip")
+                        .select("#pMass")
+                        .text("Mass : " + d.pMass + " (Earth Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pRadius")
+                        .text("Radius : " + d.radius + " (Earth Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pTemperature")
+                        .text("Temperature : " + d.pKelvin + " (Kelvin)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pDistance")
+                        .text("Distance : " + d.pDistance + " (Light Years)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pOrbit")
+                        .text("Orbit : " + d.orbit + " (Days)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pAU")
+                        .text("Distance From Parent Star : " + d.au + " (AU)")
+                ;
+                d3.select("#tooltip")
+                        .select("#pESI")
+                        .text("Earth Similarity Index : " + d.esi)
+                ;
+                d3.select("#tooltip")
+                        .select("#sMass")
+                        .text("Star Mass : " + d.sMass + " (Solar Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#sRadius")
+                        .text("Star Radius : " + d.sradius + " (Solar Units)")
+                ;
+                d3.select("#tooltip")
+                        .select("#sTemperature")
+                        .text("Star Temperature : " + d.sKelvin + " Kelvin")
+                ;
+                d3.select("#tooltip")
+                        .select("#sLuminosity")
+                        .text("Star Luminosity : " + d.sLuminosity + " (Solar Luminosity)")
+                ;
+
+                //Show the tooltip
+                d3.select("#tooltip").classed("hidden", false);
+
+                /////////////////////////////////
+
+
+                d3.select(this)
+                        .attr("fill", "#CCFFCC");
+
+
+            })
+            .on("mouseout", function() {
+
+                //Hide the tooltip
+                d3.select("#tooltip").classed("hidden", true);
+
+
+                d3.select(this)
+                        .attr("fill", function(d, i){return (planetColor(d.pKelvin)) });
+            })
+            .attr("r", function(d){return ((d.radius) * (canvasWidth/200)) })
+            .attr("cx", function(d){return (xScale(d.esi)) })
+            .attr("cy", function(d){return ((d.au) * ((canvasWidth/4) * -1)) })
+            .attr("fill", function(d, i){return (planetColor(d.pKelvin)) })
+            .each(bounce);
+
+    function bounce(){
+        var circle = d3.select(this);
+        (function oscillate(){
+            circle = circle.transition()
+                    .duration(function(d){return (((d.orbit)* 100)) })
+                    .attr("cy", function(d){return (((Math.random() * (d.au))) + (d.au) * ((canvasWidth/4))) })
+                    .transition()
+                    .attr("cy", function(d){return ((d.au) * (-1) * ((canvasWidth/4)))})
+
+                    .each("end", oscillate);
+
+        })();
+    }
+
+
+    var planetLabelsGroup =  orbit_LinesLabelsGroup.append("g");
+    var planetLabels = planetLabelsGroup.selectAll("lables")
+            .data(data)
+            .enter()
+            .append("text")
+            .attr("class", "xLabel")
+            .attr("text-anchor", "center")
+            .attr("x", function(d){return (xScale(d.esi)) })
+            .attr("y",function(d){return (((d.au) * ((canvasWidth/4) * -1)) - 3) })
+            .text (function(d){return (d.name) });
+
+
+});
+
+
+
+</script>
+
+<div id="article">
+    <p>Visualizing Earth's Most Similar Exoplanets</p><br>
+    <p>Astronomers at the Planetary Habitability Laboratory (UPR Arecibo)
+        have chronicled almost 6000 potentially habitable exoplanets,
+        ranking them by the "easy" scale known as the Earth Similarity
+        Index (ESI). The index is a multiparameter assessment of Earth-likeness
+        between zero, indicating no similarity, and one, indicating identical to Earth.
+        The four parameters are radius, density, surface temperature, and escape velocity,
+        in a first attempt to rank planetary similarity by its terrestrial composition and
+        atmospheric conditions<a href="http://phl.upr.edu/projects/earth-similarity-index-esi">[1]</a>.</p><br><p>
+    Yet there remain a multitude of additional parameters which contribute to a planet's
+    characteristics and whether or not it can ultimately support life. Astronomer Robert
+    Wittenmyer, part of the team that discovered Gliese 832-c, notes that "we have zero
+    data about other important factors such as rotation, cloud cover, tectonic activity,
+    and so on<a href="http://www.astrobio.net/news-brief/high-score-easy-scale-gliese-832c-potentially-planetary-habitability/">[2]</a>."
+
+    Notwithstanding the geothermal, chemical, and physical/gravitational attributes of the planetary body itself,
+    many additional factors relating to its parent star and solar system configuration further contribute to the
+    possibility of extraterrestrial life, it being the case that temperature correlates to mass, ultraviolet radiation
+    and therefore, how much energy a planetary body receives.
+
+</p><br><p>The data visualization entitled "Orbit of the 5 most similar
+    Exoplanets by Earth Similarity Index" (below), illustrates the radii, temperatures, and relative distances in Astronomical Units
+    between parent stars and child exoplanets, in a first assessment of the data made available from the Exoplanet Catalogue
+    (UPR Arecibo)<a href="http://phl.upr.edu/">[3]</a>. Earth's 365 day orbit can immediately be contrasted to it's most similar counterparts, all of which exhibit a
+    significantly lower AU distance to their parent stars, yet remain high-scorers on the ESI owing to compensatory factors which
+    regulate surface temperatures.
+
+</p><br><p>The highest-scoring Gleise-667-c may surprisingly be the most visually dissimilar planet in
+    relation to Earth, with a 28-day orbit around a star that is one-third the size of our sun. However, its proximity to its
+    parent star leads astronomers to expect that one side will always face the star, (such that their day and year are the same
+    lengths), with "one side in perpetual sunshine and the other always in night"<a href="http://www.universetoday.com/103131/three-potentially-habitable-planets-found-orbiting-gliese-667c/">[4]</a>. Extrapolating even further characteristics from this
+    hypothesis, we may induce that the planet's high ESI score may be due to micro-climate conditions within a thinner transitional
+    band between its day and night sides.
+</p><br>
+
+    <p>In contrast, Tau-Cet-e's solar configuration may be the most visually comparable in
+        our representation of the selected data, yet many additional factors including the presence of a large asteroid belt with over
+        10 times the amount of asteroids and comets in our own solar system have a multitude of knock-on effects to its habitability as a
+        whole. A large asteroid system can bring water to a planet. However, the increase in number of impacts significantly affects its
+        atmospheric conditions in terms of dust and heat. Thus while the surface temperature appears close to Earth's at 282 degrees Kelvin,
+        PHL states that it might instead "be dominated by a strong greenhouse effect" which may only be habitable to "simple thermophilic
+        (heat-loving) life"<a href="http://www.newscientist.com/article/dn23021-nearby-tau-ceti-may-host-two-planets-suited-to-life.html#.VFdjnzSsWAg">[5]</a>.
+
+    </p><br><p>The notion of Planetary Habitability is an evolving field. Data acquisition and further research are continuously redefining
+    hypothesis relating to the Habitable ("Goldilocks") Zone, and all the necessary conditions for the evolution of single and
+    multi-celled organisms. Further information can be accessed via the <a href="http://phl.upr.edu/">Planetry Habitability Laboritory, Main Page</a><br><br></p>
+
+    <p>References</p>
+    <p>
+        [1]<a href="http://phl.upr.edu/projects/earth-similarity-index-esi">Planetary Habitability Laboratory Exoplanets Catalog</a><br>
+        [2]<a href="http://www.astrobio.net/news-brief/high-score-easy-scale-gliese-832c-potentially-planetary-habitability/">Astrobio.Net : Gliese-832c Potential Habitability</a><br>
+        [3]<a href="http://phl.upr.edu/">Planetry Habitability Laboritory, Main Page</a><br>
+        [4]<a href="http://www.universetoday.com/103131/three-potentially-habitable-planets-found-orbiting-gliese-667c/">Universe Today : Three Potentially Habitable Planets Found Orbiting Gliese-667c</a><br>
+        [5]<a href="http://www.newscientist.com/article/dn23021-nearby-tau-ceti-may-host-two-planets-suited-to-life.html#.VFdjnzSsWAg">New Scientist : Nearby Tau-Ceti May Host Two Planets Suited To Life</a><br>
+
+    </p>
+
+
+</div>
+
+</body>
+
+</html>
